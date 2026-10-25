@@ -2,8 +2,8 @@
 
 This implementation passes isolated hook and injection tests on the C9. The
 owner confirmed the live native trial works normally with no pointer. The
-default `deploy.sh` now installs native boot persistence; `deploy-legacy.sh`
-retains the previous PHP installer.
+default `deploy.sh` installs native boot persistence. The previous PHP
+implementation and installer have been removed.
 
 ## Build and local tests
 

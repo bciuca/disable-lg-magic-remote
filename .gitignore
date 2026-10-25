@@ -1,8 +1,7 @@
 .DS_Store
 .claude/
 
-# Third-party clone reused only for the prebuilt ezinject/libphp/hookfactory
-# see README
+# Obsolete local dependency checkout from the removed PHP installer
 lginputhook-ref/
 
 # Native SDKs, downloads, tests, and generated binaries
