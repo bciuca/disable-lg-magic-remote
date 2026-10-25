@@ -4,3 +4,10 @@
 # Third-party clone reused only for the prebuilt ezinject/libphp/hookfactory
 # see README
 lginputhook-ref/
+
+# Native SDKs, downloads, tests, and generated binaries
+.build/
+*.so
+
+# Local experiments
+dev/

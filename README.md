@@ -1,89 +1,104 @@
 # Disable the pointer on the LG Magic Remote
 
-This script disables the pointer on LG Magic Remotes on rooted webOS LG TVs at boot time.
+Keep the Magic Remote's physical buttons while suppressing pointer movement
+and scroll-wheel input on a rooted LG webOS TV. The native implementation uses
+a small C hook injected into `lginput2`; it does not replace firmware files or
+restart the input service.
 
-Use at your own risk. There's no code modification on the TV and is completely reversable so it _should_ be safe. The script simply injects a hook into a running system process to no-op the system pointer functions at boot time. I tested this on my TV (2019 C9 OLED) and am mostly satisfied with it (see [known issues](#known-issues)).
-
-
-## Why?
-
-I built this because I hated the pointer showing up unexpectedly (like when sitting on the couch and the remote moves), which then triggered some player UI or TV menu. I've tried different solutions to disable the pointer but nothing was robust enough or as seamless as I wanted. I was using a dumb IR universal remote that worked great, but I still preferred the design and feel of the Magic Remote.
+The native hook passed isolated ARM/Thumb injection and rollback tests on a
+2019 C9 with glibc 2.24. A live timed trial was confirmed by the owner: normal
+remote operation with no pointer. See [NATIVE.md](NATIVE.md) for validation
+details, source dependencies, and remaining test coverage.
 
 ## How it works
 
-At the service layer `lginput2` (`com.webos.service.mrcu` on the [Luna service URI](https://webostv.developer.lge.com/develop/references/magic-remote)) exposes the emit paths of the magic remote as
-separate functions:
+`ezinject` loads `libmagicpointer.so` into the running input service. Frida Gum
+is linked into the native library; no PHP runtime is needed.
 
-- `lginput_uinput_send_position` — cursor X/Y
-- `lginput_uinput_send_wheel` — scroll
-- `lginput_uinput_send_custom_event` — the LG cursor on/off keys
-- `lginput_uinput_send_button` — the real buttons
+- Position and wheel emission are suppressed.
+- Cursor-on custom events become cursor-off events.
+- Pairing, disconnection, cursor-off, and other custom events pass through.
+- The button emission function remains untouched.
 
-Inject a hook (via [`ezinject`](https://github.com/smx-smx/ezinject)) into the running `lginput2` that turns the first three functions into no-ops and leaves `send_button` alone. Injection uses [ptrace](https://man7.org/linux/man-pages/man2/ptrace.2.html) to load a small PHP hook via [`lginputhook`](https://github.com/Simon34545/lginputhook)'s `libphp` + [Frida-Gum](https://github.com/frida/frida-gum) `hookfactory`.
+The library lives in writable `/home/root/magic-pointer-native/`. A Homebrew
+boot hook starts one watcher, which injects into each new `lginput2` process
+and verifies an explicit readiness marker. The watcher refuses existing
+hooks, stopped/traced processes, and repeated attempts after failed injection.
+An exclusive lock prevents multiple watchers from racing.
 
+The patches exist only in process memory. A reboot removes them; the boot
+hook reapplies them. The pointer can appear briefly before injection completes.
+Homebrew root access must remain enabled.
 
-At boot time, `/var/lib/webosbrew/init.d/disable-magic-pointer` launches `inject-pointer-hook.sh`, which waits
-for `lginput2` (usually ~30 seconds into boot), injects the hook as soon as it appears, and re-injects if `lginput2` ever
-respawns. The cursor can become actiqve before injection happens if triggered by shaking the remote or pressing the Home button.
+## Build and install
 
-## Requirements
+Requirements: rooted TV with root SSH/key authentication and Homebrew startup
+support; `flock`, `sha256sum`, and BusyBox's `timeout -t` on the TV. The verified
+target is 32-bit ARM EABI5 soft-float even though its kernel is aarch64.
 
-- A rooted ([webOS Homebrew](https://www.webosbrew.org/rooting/)) LG TV with root SSH enabled.
-- Dev environment: just git and ssh if using the pre-built binaries.
-- The prebuilt `ezinject`/`libphp.so` are 32-bit ARM EABI5 soft-float, glibc. You can compile from source if you really want, all dependencies are open source.
+The automatic build setup supports Apple Silicon macOS with CMake, Git, curl,
+pkg-config, Python 3, and a C compiler. Downloads and binaries stay in the
+ignored `.build/` directory. Other build hosts require an appropriate SDK.
 
-## Install
+```sh
+git clone https://github.com/bciuca/disable-lg-magic-remote.git
+cd disable-lg-magic-remote
+./test-native.sh
+./build-native.sh
+./stage-native.sh root@YOUR_TV_IP
+```
 
-```bash
-git clone git@github.com:bciuca/lg-magic-remote.git
-cd lg-magic-remote
+For a new TV/firmware, follow the isolated tests and compatibility checks in
+[NATIVE.md](NATIVE.md) before injecting into its real input service. Do not
+layer the native hook over an already loaded PHP or other input hook.
+
+After validating the candidate:
+
+```sh
 ./deploy.sh root@YOUR_TV_IP
+ssh root@YOUR_TV_IP reboot
 ```
 
-### What deploy.sh does
+Deployment verifies uploaded checksums, preserves/disables the old PHP boot
+hook if present, and installs native autostart. It schedules activation for
+the next reboot; it does not restart the TV or inject into the current process.
+The native module receives duration `0` at boot, so it stays active for the
+process lifetime. Timed restoration applies only to explicitly timed trials.
 
-- clones `lginputhook` for the prebuilt binaries 
-- picks the right `libphp` for your TV's `libcrypt`
-- pushes everything into place 
-- installs the boot hook (no restart needed)
-
-This is the on-TV layout `deploy.sh` creates:
-
-```
-/home/root/magic-pointer/
-  inject-pointer-hook.sh                          <- tv/inject-pointer-hook.sh
-  inputhook/
-    ezinject                                      <- lginputhook .../inputhook/ezinject
-    hookfactory.php                               <- lginputhook .../inputhook/hookfactory.php
-    pointer-hook.php                              <- tv/pointer-hook.php
-    libcrypt1/libphp.so                           <- lginputhook .../inputhook/libcrypt1/libphp.so
-                                                     (libcrypt2 if /usr/lib/libcrypt.so.2 exists)
-/var/lib/webosbrew/init.d/disable-magic-pointer   <- tv/disable-magic-pointer.sh
+```text
+/home/root/magic-pointer-native/
+  candidate-<manifest hash>/     # immutable injector, module, test programs
+  active                        # selected candidate path
+  watch-native.sh
+  restore-native.sh
+  legacy-backup/                # original PHP boot hook, when present
+/var/lib/webosbrew/init.d/disable-magic-pointer-native
 ```
 
-## Uninstall
+## Status and rollback
 
-Uninstalling removes the boot hook and reboots to clean stock with the default pointer behavior.
-
-```bash
-ssh root@YOUR_TV_IP 'rm -f /var/lib/webosbrew/init.d/disable-magic-pointer; reboot'
-
-# optional, remove the files 
-ssh root@YOUR_TV_IP 'rm -rf /home/root/magic-pointer'
+```sh
+ssh root@YOUR_TV_IP 'P=$(pidof lginput2); cat /tmp/magic-pointer-native-$P/status; cat /tmp/magic-pointer-native-watch.log'
 ```
 
-## Known issues
+`ready` means all native replacements installed. It does not replace a check
+with the physical remote. Detailed injection logs are in
+`/tmp/magic-pointer-native-module.log` and
+`/tmp/magic-pointer-native-injector.log`.
 
-- Sometimes root access is reset and the boot hook will not work
-  - **Fix:** Open webOS Homebrew Channel app and go into settings and make sure root is on,
-    then reboot the TV.
+Restore normal pointer behavior and disable native autostart without rebooting:
 
-- The remote buttons may become unresponsive, except for the power button.
-  - **Fix:** Power cycle the remote by pulling out a battery for a few seconds and reinserting.
+```sh
+ssh root@YOUR_TV_IP 'sh /home/root/magic-pointer-native/restore-native.sh'
+```
 
-- If the pointer comes on right before the hook, you'll have a frozen pointer on the screen for about 30 seconds
-  until it disappears. The pointer may prevent you from using the d-pad to navigate depending on where the 
-  pointer last froze on the screen.
-  - **Fix:** Just wait it out, the pointer will disappear.
+The library remains mapped until process exit to protect in-flight callbacks.
+Re-enabling requires deployment followed by a fresh process/reboot. Rollback
+does not automatically re-enable the old PHP hook.
 
+## Legacy PHP implementation
 
+The previous code remains in `tv/pointer-hook.php`, `tv/inject-pointer-hook.sh`,
+and `tv/disable-magic-pointer.sh`. Its installer is `deploy-legacy.sh`; its
+original documentation and known issues are in [LEGACY.md](LEGACY.md).
+The default `deploy.sh` now selects the native implementation.
