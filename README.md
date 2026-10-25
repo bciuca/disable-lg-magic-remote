@@ -95,10 +95,3 @@ ssh root@YOUR_TV_IP 'sh /home/root/magic-pointer-native/restore-native.sh'
 The library remains mapped until process exit to protect in-flight callbacks.
 Re-enabling requires deployment followed by a fresh process/reboot. Rollback
 does not automatically re-enable the old PHP hook.
-
-## Legacy PHP implementation
-
-The previous code remains in `tv/pointer-hook.php`, `tv/inject-pointer-hook.sh`,
-and `tv/disable-magic-pointer.sh`. Its installer is `deploy-legacy.sh`; its
-original documentation and known issues are in [LEGACY.md](LEGACY.md).
-The default `deploy.sh` now selects the native implementation.
