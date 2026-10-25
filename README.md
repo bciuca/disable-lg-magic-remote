@@ -13,7 +13,7 @@ details, source dependencies, and remaining test coverage.
 ## How it works
 
 `ezinject` loads `libmagicpointer.so` into the running input service. Frida Gum
-is linked into the native library; no PHP runtime is needed.
+is linked into the native library.
 
 - Position and wheel emission are suppressed.
 - Cursor-on custom events become cursor-off events.
@@ -51,8 +51,7 @@ cd disable-lg-magic-remote
 ```
 
 For a new TV/firmware, follow the isolated tests and compatibility checks in
-[NATIVE.md](NATIVE.md) before injecting into its real input service. Do not
-layer the native hook over an already loaded PHP or other input hook.
+[NATIVE.md](NATIVE.md) before injecting into its real input service.
 
 After validating the candidate:
 
@@ -61,8 +60,8 @@ After validating the candidate:
 ssh root@YOUR_TV_IP reboot
 ```
 
-Deployment verifies uploaded checksums, preserves/disables the old PHP boot
-hook if present, and installs native autostart. It schedules activation for
+Deployment verifies uploaded checksums and installs native autostart.
+It schedules activation for
 the next reboot; it does not restart the TV or inject into the current process.
 The native module receives duration `0` at boot, so it stays active for the
 process lifetime. Timed restoration applies only to explicitly timed trials.
@@ -73,7 +72,6 @@ process lifetime. Timed restoration applies only to explicitly timed trials.
   active                        # selected candidate path
   watch-native.sh
   restore-native.sh
-  legacy-backup/                # original PHP boot hook, when present
 /var/lib/webosbrew/init.d/disable-magic-pointer-native
 ```
 
@@ -95,5 +93,4 @@ ssh root@YOUR_TV_IP 'sh /home/root/magic-pointer-native/restore-native.sh'
 ```
 
 The library remains mapped until process exit to protect in-flight callbacks.
-Re-enabling requires deployment followed by a fresh process/reboot. Rollback
-does not automatically re-enable the old PHP hook.
+Re-enabling requires deployment followed by a fresh process/reboot.
