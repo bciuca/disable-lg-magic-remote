@@ -10,6 +10,10 @@ The native hook passed isolated ARM/Thumb injection and rollback tests on a
 remote operation with no pointer. See [NATIVE.md](NATIVE.md) for validation
 details, source dependencies, and remaining test coverage.
 
+## Why?
+
+I built this because I hated the pointer showing up unexpectedly (like when sitting on the couch and the remote moves), which then triggered some player UI or TV menu. I've tried different solutions to disable the pointer but nothing was robust enough or as seamless as I wanted. I was using a dumb IR universal remote that worked great, but I still preferred the design and feel of the Magic Remote.
+
 ## How it works
 
 `ezinject` loads `libmagicpointer.so` into the running input service. Frida Gum
