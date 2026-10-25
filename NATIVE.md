@@ -101,6 +101,15 @@ a second watcher exited harmlessly without reinjection or changing the log.
 Checksums of all three installed shell scripts matched the repository files.
 Boot injection passes duration `0`, so there is no trial-expiration timer.
 
+The watcher recovery update was deployed live on the same day. It adopted
+PID 2692 (start time 1248) without reinjection; module status stayed `ready`,
+the process remained sleeping with `TracerPid: 0`, and a duplicate watcher
+exited without changing the log. The installed script checksum matched the
+repository. Local coverage now includes ten watcher tests, including attempt
+records across watcher restarts, PID reuse, adoption of a ready hook, and
+continued supervision after injection/hook failure. Failure and PID-reuse
+scenarios were simulated locally, not induced in the TV input service.
+
 Power-loss cold start, standby/resume, and remote reconnection are not yet
 separately verified. Process-respawn supervision is covered by local watcher
 tests; the real input service has not been deliberately crashed/restarted.
@@ -149,7 +158,12 @@ tests; the real input service has not been deliberately crashed/restarted.
    staged payload via an `active` file. The watcher holds a `flock` lock,
    identifies processes by PID plus start time, uses a bounded injector run,
    and requires module readiness. It never retries a failed/partial injection
-   in the same process. It can resume its own previously running target if
+   in the same process, even after the watcher restarts: an attempt directory
+   keyed by PID and start time is reserved before injection. Failed or unsafe
+   targets are skipped while supervision continues for future processes. A
+   restarted watcher adopts a ready native hook without reinjection. Known
+   stale module state is archived when a PID is reused; unknown state is
+   refused. These records live in `/tmp` and reset on reboot. It can resume its own previously running target if
    injection leaves it stopped with no tracer. Existing stopped/traced targets
    are refused. `tv/restore-native.sh` disables autostart, waits for the watcher
    to stop, and requests live restoration. See the main README for commands.

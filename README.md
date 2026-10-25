@@ -23,7 +23,9 @@ is linked into the native library; no PHP runtime is needed.
 The library lives in writable `/home/root/magic-pointer-native/`. A Homebrew
 boot hook starts one watcher, which injects into each new `lginput2` process
 and verifies an explicit readiness marker. The watcher refuses existing
-hooks, stopped/traced processes, and repeated attempts after failed injection.
+hooks, stopped/traced processes, and repeated attempts after failed injection, including watcher restarts.
+Failed targets are skipped while the watcher waits for a fresh process.
+A restarted watcher adopts an already-ready native hook without reinjection.
 An exclusive lock prevents multiple watchers from racing.
 
 The patches exist only in process memory. A reboot removes them; the boot

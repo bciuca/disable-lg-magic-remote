@@ -115,22 +115,30 @@ state.mkdir()
 
     def test_old_hook_refused(self):
         self.process(500001, 100, maps="/old/libphp.so\n")
-        self.assertEqual(self.launch().wait(timeout=3), 1)
+        child = self.launch()
+        self.wait_for(lambda: (self.runtime / "magic-pointer-native-watch.log").exists() and "skipped; watcher remains" in (self.runtime / "magic-pointer-native-watch.log").read_text())
+        self.assertIsNone(child.poll())
         self.assertEqual(self.calls(), [])
 
     def test_traced_target_refused(self):
         self.process(500001, 100, tracer=123)
-        self.assertEqual(self.launch().wait(timeout=3), 1)
+        child = self.launch()
+        self.wait_for(lambda: (self.runtime / "magic-pointer-native-watch.log").exists() and "skipped; watcher remains" in (self.runtime / "magic-pointer-native-watch.log").read_text())
+        self.assertIsNone(child.poll())
         self.assertEqual(self.calls(), [])
 
     def test_injector_failure_does_not_retry(self):
         self.env["MP_TEST_FAIL"] = "injector"
-        self.assertEqual(self.launch().wait(timeout=3), 1)
+        child = self.launch()
+        self.wait_for(lambda: (self.runtime / "magic-pointer-native-watch.log").exists() and "skipped; watcher remains" in (self.runtime / "magic-pointer-native-watch.log").read_text())
+        self.assertIsNone(child.poll())
         self.assertEqual(self.calls(), ["500001"])
 
     def test_hook_failure_does_not_retry(self):
         self.env["MP_TEST_FAIL"] = "hook"
-        self.assertEqual(self.launch().wait(timeout=3), 1)
+        child = self.launch()
+        self.wait_for(lambda: (self.runtime / "magic-pointer-native-watch.log").exists() and "skipped; watcher remains" in (self.runtime / "magic-pointer-native-watch.log").read_text())
+        self.assertIsNone(child.poll())
         self.assertEqual(self.calls(), ["500001"])
 
     def test_restoration_is_not_reinjected(self):
@@ -139,8 +147,60 @@ state.mkdir()
         self.wait_for(lambda: status.exists())
         time.sleep(0.2)
         status.write_text("restored\n")
-        self.assertEqual(child.wait(timeout=4), 1)
+        time.sleep(2.2)
+        self.assertIsNone(child.poll())
         self.assertEqual(self.calls(), ["500001"])
+
+
+    def ready(self):
+        log = self.runtime / "magic-pointer-native-watch.log"
+        return log.exists() and "Native hook ready" in log.read_text()
+
+    def stop_watcher(self, child):
+        (self.base / "disabled").touch()
+        self.assertEqual(child.wait(timeout=4), 0)
+        (self.base / "disabled").unlink()
+
+    def test_failure_record_survives_watcher_restart(self):
+        self.env["MP_TEST_FAIL"] = "injector"
+        first = self.launch()
+        self.wait_for(lambda: self.calls() == ["500001"])
+        self.stop_watcher(first)
+        second = self.launch()
+        time.sleep(2.3)
+        self.assertIsNone(second.poll())
+        self.assertEqual(self.calls(), ["500001"])
+        self.process(500002, 200)
+        self.wait_for(lambda: self.calls() == ["500001", "500002"])
+
+    def test_pid_reuse_archives_old_state(self):
+        child = self.launch()
+        self.wait_for(self.ready)
+        self.process(500001, 200)
+        self.wait_for(lambda: self.calls() == ["500001", "500001"])
+        self.assertIsNone(child.poll())
+        archived = self.runtime / "magic-pointer-native-attempts/500001:100-state/status"
+        self.assertEqual(archived.read_text(), "ready\n")
+
+    def test_restart_adopts_ready_hook_and_supervises_respawn(self):
+        first = self.launch()
+        self.wait_for(self.ready)
+        self.stop_watcher(first)
+        second = self.launch()
+        self.wait_for(lambda: "supervising without reinjection" in
+                      (self.runtime / "magic-pointer-native-watch.log").read_text())
+        self.assertEqual(self.calls(), ["500001"])
+        self.process(500002, 200)
+        self.wait_for(lambda: self.calls() == ["500001", "500002"])
+        self.assertIsNone(second.poll())
+
+    def test_failed_hook_does_not_prevent_fresh_process(self):
+        self.env["MP_TEST_FAIL"] = "hook"
+        child = self.launch()
+        self.wait_for(lambda: self.calls() == ["500001"])
+        self.process(500002, 200)
+        self.wait_for(lambda: self.calls() == ["500001", "500002"])
+        self.assertIsNone(child.poll())
 
 
 if __name__ == "__main__":
