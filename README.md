@@ -1,6 +1,6 @@
 # Disable the pointer on the LG Magic Remote
 
-This script disables the pointer on LG Magic Remotes on rooted webOS LG TVs at boot time.
+This script disables the pointer on LG Magic Remotes on rooted webOS LG TVs at boot time. Latest update removes php dependency and replaces it with a native C hook instead.
 
 Use at your own risk. There's no firmware modification on the TV and it is completely reversible so it _should_ be safe. The script injects a native C hook into a running system process to suppress pointer movement and scroll-wheel input at boot time. I tested this on my TV (2019 C9 OLED) and am mostly satisfied with it (see [known issues](#known-issues)).
 
@@ -85,8 +85,8 @@ compatible extracted webOS SDK as the first argument to `build-native.sh`; those
    /path/to/ezinject -l /tmp/magic-pointer-native-test.log PID /path/to/libmagicpointer.so 10
    ```
 
-5. Before a live trial, disable autostart with sh /home/root/magic-pointer-native/restore-native.sh, then reboot the TV. This 
-   starts a fresh lginput2 process without loading the hook. After reconnecting over SSH, run pidof lginput2 to get the PID 
+5. Before a live trial, disable autostart with `sh /home/root/magic-pointer-native/restore-native.sh`, then reboot the TV. This 
+   starts a fresh `lginput2` process without loading the hook. After reconnecting over SSH, run pidof `lginput2` to get the PID 
    for the trial command. To end a trial early, run `touch /tmp/magic-pointer-native-PID/restore` on the TV and check that 
    its status becomes `restored`.
 6. Reboot between trials and restoration for a clean run. After successful validation, deploy with:
