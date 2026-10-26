@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 # Upload an immutable candidate for isolated tests. Does not inject or autostart.
 set -eu
 TV="${1:?usage: ./stage-native.sh root@TV-IP}"

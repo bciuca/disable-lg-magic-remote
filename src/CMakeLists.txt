@@ -1,3 +1,7 @@
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 cmake_minimum_required(VERSION 3.16)
 project(magic_pointer C)
 set(CMAKE_C_STANDARD 11)

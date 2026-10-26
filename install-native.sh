@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 # Schedule the validated candidate for the next boot. Does not reboot/inject.
 set -eu
 TV="${1:?usage: ./install-native.sh root@TV-IP}"

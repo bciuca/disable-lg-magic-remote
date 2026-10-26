@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 # Single-instance watcher for the tested native module. Never restart lginput2.
 set -eu
 BASE=${MP_BASE:-/home/root/magic-pointer-native}

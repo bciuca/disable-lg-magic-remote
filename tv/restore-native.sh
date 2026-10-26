@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 # Disable this native setup and request live restoration; never kill lginput2.
 set -eu
 BASE=/home/root/magic-pointer-native

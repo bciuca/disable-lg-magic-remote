@@ -1,4 +1,8 @@
 #!/bin/sh
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 # Build a matching ARM injector, native module, and isolated TV test programs.
 set -eu
 ROOT=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
@@ -64,17 +68,17 @@ cmake -S "$BUILD/ezinject" -B "$BUILD/ezinject-build" \
     -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_BUILD_TYPE=Release \
     -DUSE_FRIDA_GUM=OFF -DENABLE_CPP_SAMPLES=OFF -DENABLE_PHP_SAMPLE=OFF
 cmake --build "$BUILD/ezinject-build" --target ezinject ezinject_crt --parallel 4
-cmake -S "$ROOT/native" -B "$BUILD/native" \
+cmake -S "$ROOT/src" -B "$BUILD/src" \
     -DCMAKE_TOOLCHAIN_FILE="$SDK/share/buildroot/toolchainfile.cmake" \
     -DCMAKE_SYSTEM_NAME=Linux -DCMAKE_BUILD_TYPE=Release \
     -DPKG_CONFIG_EXECUTABLE="$PKG_CONFIG" \
     -DEZINJECT_SOURCE="$BUILD/ezinject" -DEZINJECT_BUILD="$BUILD/ezinject-build" \
     -DGUM_SYSROOT="$GUM_SYSROOT"
-cmake --build "$BUILD/native" --parallel 4
+cmake --build "$BUILD/src" --parallel 4
 
 mkdir -p "$BUILD/dist"
-cp "$BUILD/ezinject-build/ezinject" "$BUILD/native/libmagicpointer.so" \
-    "$BUILD/native/pointer-fixture" "$BUILD/native/pointer-fixture-thumb" "$BUILD/dist/"
+cp "$BUILD/ezinject-build/ezinject" "$BUILD/src/libmagicpointer.so" \
+    "$BUILD/src/pointer-fixture" "$BUILD/src/pointer-fixture-thumb" "$BUILD/dist/"
 for name in ezinject libmagicpointer.so pointer-fixture pointer-fixture-thumb; do
     "$SDK/bin/arm-webos-linux-gnueabi-strip" --strip-unneeded "$BUILD/dist/$name"
 done

@@ -1,12 +1,12 @@
 .DS_Store
 .claude/
 
-# Obsolete local dependency checkout from the removed PHP installer
-lginputhook-ref/
-
 # Native SDKs, downloads, tests, and generated binaries
 .build/
 *.so
 
 # Local experiments
 dev/
+
+# Local editor settings containing machine-specific paths
+.vscode/settings.json

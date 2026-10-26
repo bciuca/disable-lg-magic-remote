@@ -1,3 +1,7 @@
+# Copyright (c) 2026, BC (https://github.com/bciuca).
+# SPDX-License-Identifier: MIT
+# See LICENSE in the project root for the full license text.
+
 """Exercise the actual POSIX watcher with simulated processes/injector."""
 import os
 from pathlib import Path
