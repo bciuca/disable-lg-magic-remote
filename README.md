@@ -1,6 +1,8 @@
 # Disable the pointer on the LG Magic Remote
 
-This script disables the pointer on LG Magic Remotes on rooted webOS LG TVs at boot time. Latest update removes php dependency and replaces it with a native C hook instead.
+_Note:_ Latest update removes PHP dependency and replaces it with a native C hook instead in an attempt to fix the seemingly random magic remote disconnects.
+
+This script disables the pointer on LG Magic Remotes on rooted webOS LG TVs at boot time.
 
 Use at your own risk. There's no firmware modification on the TV and it is completely reversible so it _should_ be safe. The script injects a native C hook into a running system process to suppress pointer movement and scroll-wheel input at boot time. I tested this on my TV (2019 C9 OLED) and am mostly satisfied with it (see [known issues](#known-issues)).
 
@@ -144,11 +146,12 @@ The library stays mapped until the input process exits. Re-enabling requires dep
   - **Fix:** Open webOS Homebrew Channel app and go into settings and make sure root is on,
     then reboot the TV.
 
-- The magic remote buttons may become unresponsive, except for the power button. Latest fix should address but has not been 100% confirmed yet.
-  - **Fix:** Power cycle the remote by pulling out a battery for a few seconds and reinserting.
+- The magic remote buttons may become unresponsive, except for the power button. Latest fix 
+  should address this issue but leaving this comment here until confirmed.
+  - **Fix:** Power cycle the remote by pulling out a battery briefly and reinserting.
 
-- If the pointer comes on right before the hook, it can remain visible until a cursor-off event or the TV's timeout clears it.
-  The hook does not immediately clear a pointer that was already visible when it loaded.
+- If the pointer comes on right before the hook, it may remain visible until a cursor-off 
+  event or the TV's timeout clears it.
   - **Workaround:** Wait for it to disappear; the timeout with the native hook still needs physical testing.
 
 ## Dependencies and attribution
