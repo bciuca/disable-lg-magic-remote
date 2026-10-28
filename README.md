@@ -152,7 +152,7 @@ The library stays mapped until the input process exits. Re-enabling requires dep
 
 - If the pointer comes on right before the hook, it may remain visible until a cursor-off 
   event or the TV's timeout clears it.
-  - **Workaround:** Wait for it to disappear; the timeout with the native hook still needs physical testing.
+  - **Workaround:** Wait for it to disappear.
 
 ## Dependencies and attribution
 
